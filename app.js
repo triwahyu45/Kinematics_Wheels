@@ -576,7 +576,7 @@ function handleGamepadInput(vx, vy, rx, ry) {
   }
 
   // Translate vx, vy based on field-centric mode if enabled
-  if (isFieldCentric) {
+  if (isFieldCentric || isHeadingLock) {
     const theta = robot.rot;
     // Rotate field-centric vector by theta to get robot-centric vector
     finalVx = vx * Math.cos(theta) - vy * Math.sin(theta);
@@ -660,7 +660,7 @@ function pollKeyboardAndVirtualJoysticks() {
     // Apply field-centric rotation if active
     let finalVx = vx;
     let finalVy = vy;
-    if (isFieldCentric) {
+    if (isFieldCentric || isHeadingLock) {
       const theta = robot.rot;
       finalVx = vx * Math.cos(theta) - vy * Math.sin(theta);
       finalVy = vx * Math.sin(theta) + vy * Math.cos(theta);
@@ -740,7 +740,7 @@ function pollKeyboardAndVirtualJoysticks() {
   // Apply field-centric mapping to keyboard layout
   let finalVx = vx;
   let finalVy = vy;
-  if (isFieldCentric) {
+  if (isFieldCentric || isHeadingLock) {
     const theta = robot.rot;
     finalVx = vx * Math.cos(theta) - vy * Math.sin(theta);
     finalVy = vx * Math.sin(theta) + vy * Math.cos(theta);
