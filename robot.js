@@ -441,21 +441,21 @@ class Omni3DriveTrain extends Drivetrain {
     // Wheel 0: Front Apex (0, -R)
     ctx.save();
     ctx.translate(0, -R);
-    ctx.rotate(Math.PI / 2.0); // Oriented horizontally (perpendicular to top radius)
+    ctx.rotate(-Math.PI / 2.0); // Oriented horizontally, local positive Y points right
     this.drawSingleWheel(ctx, wheelSpins[0], velocities[0]);
     ctx.restore();
 
     // Wheel 1: Bottom Right (R * cos(30°), R * sin(30°))
     ctx.save();
     ctx.translate(R * Math.cos(Math.PI / 6.0), R * Math.sin(Math.PI / 6.0));
-    ctx.rotate(2.0 * Math.PI / 3.0);
+    ctx.rotate(Math.PI / 6.0); // Perpendicular to radius, local positive Y points down-left
     this.drawSingleWheel(ctx, wheelSpins[1], velocities[1]);
     ctx.restore();
 
     // Wheel 2: Bottom Left (-R * cos(30°), R * sin(30°))
     ctx.save();
     ctx.translate(-R * Math.cos(Math.PI / 6.0), R * Math.sin(Math.PI / 6.0));
-    ctx.rotate(4.0 * Math.PI / 3.0);
+    ctx.rotate(5.0 * Math.PI / 6.0); // Perpendicular to radius, local positive Y points up-left
     this.drawSingleWheel(ctx, wheelSpins[2], velocities[2]);
     ctx.restore();
   }
@@ -482,7 +482,8 @@ class Omni3DriveTrain extends Drivetrain {
       ctx.strokeStyle = "#ef4444";
       ctx.lineWidth = 3;
       
-      const fy = -velocity * (MECANUM_ARROW_LENGTH + 10);
+      // Draw arrow in the direction of local positive Y (so no negation here)
+      const fy = velocity * (MECANUM_ARROW_LENGTH + 10);
       
       ctx.beginPath();
       ctx.moveTo(0, 0);
@@ -490,7 +491,7 @@ class Omni3DriveTrain extends Drivetrain {
       ctx.stroke();
 
       // Arrowhead
-      const offset = velocity > 0 ? 10 : -10;
+      const offset = velocity > 0 ? -10 : 10;
       ctx.beginPath();
       ctx.moveTo(0, fy);
       ctx.lineTo(-6, fy + offset);
