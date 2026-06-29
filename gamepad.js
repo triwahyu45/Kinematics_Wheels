@@ -219,6 +219,38 @@ class GamepadHandler {
         console.log("Gamepad: Next Drivetrain");
         window.dispatchEvent(new CustomEvent("dt-next"));
         break;
+      case 6: // 'LT' - Toggle Path Trail
+        console.log("Gamepad: Toggling Trail");
+        window.dispatchEvent(new CustomEvent("toggle-trail"));
+        break;
+      case 7: // 'RT' - Toggle Force Vectors (Alternative)
+        console.log("Gamepad: Toggling Vectors (RT)");
+        window.dispatchEvent(new CustomEvent("toggle-vectors"));
+        break;
+      case 8: // 'Select/Back' - Toggle Lock Robot Position
+        console.log("Gamepad: Toggling Lock Position");
+        window.dispatchEvent(new CustomEvent("toggle-lock"));
+        break;
+      case 9: // 'Start' - Toggle Grid Lines
+        console.log("Gamepad: Toggling Grid");
+        window.dispatchEvent(new CustomEvent("toggle-grid"));
+        break;
+      case 12: // D-pad Up - Speed Up
+        console.log("Gamepad: Speed Up");
+        window.dispatchEvent(new CustomEvent("speed-up"));
+        break;
+      case 13: // D-pad Down - Speed Down
+        console.log("Gamepad: Speed Down");
+        window.dispatchEvent(new CustomEvent("speed-down"));
+        break;
+      case 14: // D-pad Left - Rotation Speed Down
+        console.log("Gamepad: Rotation Speed Down");
+        window.dispatchEvent(new CustomEvent("rot-down"));
+        break;
+      case 15: // D-pad Right - Rotation Speed Up
+        console.log("Gamepad: Rotation Speed Up");
+        window.dispatchEvent(new CustomEvent("rot-up"));
+        break;
     }
   }
 }

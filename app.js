@@ -242,6 +242,64 @@ function setupCustomGamepadActions() {
     activeDrivetrainIndex = (activeDrivetrainIndex + 1) % DRIVETRAINS.length;
     triggerDrivetrainChange();
   });
+
+  window.addEventListener("toggle-lock", () => {
+    const toggle = document.getElementById("toggle-lock-position");
+    toggle.checked = !toggle.checked;
+    lockRobotPosition = toggle.checked;
+    if (lockRobotPosition) {
+      robot.x = canvas.width / 2;
+      robot.y = canvas.height / 2;
+    }
+  });
+
+  window.addEventListener("toggle-trail", () => {
+    const toggle = document.getElementById("toggle-trail");
+    toggle.checked = !toggle.checked;
+    showTrail = toggle.checked;
+  });
+
+  window.addEventListener("toggle-grid", () => {
+    const toggle = document.getElementById("toggle-grid");
+    toggle.checked = !toggle.checked;
+    showGrid = toggle.checked;
+  });
+
+  window.addEventListener("speed-up", () => {
+    const slider = document.getElementById("slider-speed");
+    let val = parseFloat(slider.value) + 0.1;
+    if (val > 2.0) val = 2.0;
+    slider.value = val;
+    speedMultiplier = val;
+    document.getElementById("val-speed").textContent = val.toFixed(1) + "x";
+  });
+
+  window.addEventListener("speed-down", () => {
+    const slider = document.getElementById("slider-speed");
+    let val = parseFloat(slider.value) - 0.1;
+    if (val < 0.1) val = 0.1;
+    slider.value = val;
+    speedMultiplier = val;
+    document.getElementById("val-speed").textContent = val.toFixed(1) + "x";
+  });
+
+  window.addEventListener("rot-up", () => {
+    const slider = document.getElementById("slider-rot-speed");
+    let val = parseFloat(slider.value) + 0.1;
+    if (val > 2.0) val = 2.0;
+    slider.value = val;
+    rotSpeedMultiplier = val;
+    document.getElementById("val-rot-speed").textContent = val.toFixed(1) + "x";
+  });
+
+  window.addEventListener("rot-down", () => {
+    const slider = document.getElementById("slider-rot-speed");
+    let val = parseFloat(slider.value) - 0.1;
+    if (val < 0.1) val = 0.1;
+    slider.value = val;
+    rotSpeedMultiplier = val;
+    document.getElementById("val-rot-speed").textContent = val.toFixed(1) + "x";
+  });
 }
 
 function triggerDrivetrainChange() {
