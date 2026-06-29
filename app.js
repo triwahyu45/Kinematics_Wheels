@@ -30,7 +30,7 @@ const maxHistoryLength = 200;
 let chartCanvas, chartCtx;
 
 // Active Drivetrains
-const DRIVETRAINS = ["mecanum", "omni", "tank"];
+const DRIVETRAINS = ["mecanum", "omni", "omni3", "tank"];
 let activeDrivetrainIndex = 0;
 
 // Explanations for Drivetrains
@@ -49,13 +49,25 @@ const DT_EXPLANATIONS = {
     <code>BR = -Vy - Vx + Vrot</code>
   `,
   omni: `
-    <strong>Omni-wheel Kinematics</strong><br>
+    <strong>Omni-wheel (4W) Kinematics</strong><br>
     Similar to Mecanum, but wheels are physically rotated at 45° corners.
     <ul>
       <li>Exerts force perpendicular to the roller axis.</li>
       <li>Rollers spin freely along the wheel direction, allowing slide.</li>
       <li>Maintains same kinematic calculations as Mecanum but changes roller angles.</li>
     </ul>
+  `,
+  omni3: `
+    <strong>Omni-wheel (3W / Kiwi) Kinematics</strong><br>
+    Uses 3 Omni wheels spaced at 120° angles to provide holonomic motion.
+    <ul>
+      <li><strong>Back Wheel:</strong> Drives purely horizontally.</li>
+      <li><strong>FR & FL Wheels:</strong> Positioned at angles to resolve forward & lateral forces.</li>
+      <li>Enables full translation and rotation with only 3 motors.</li>
+    </ul>
+    <code>Wheel0 (Back) = -Vx + Vrot</code><br>
+    <code>Wheel1 (FR) = 0.5*Vx - 0.866*Vy + Vrot</code><br>
+    <code>Wheel2 (FL) = 0.5*Vx + 0.866*Vy + Vrot</code>
   `,
   tank: `
     <strong>Tank / Skid-Steer Kinematics</strong><br>
@@ -334,6 +346,8 @@ function setupKeyboardEventListeners() {
       document.getElementById("btn-mecanum").click();
     } else if (e.key.toLowerCase() === 'o') {
       document.getElementById("btn-omni").click();
+    } else if (e.key.toLowerCase() === 'k') {
+      document.getElementById("btn-omni3").click();
     } else if (e.key.toLowerCase() === 't') {
       document.getElementById("btn-tank").click();
     }
@@ -539,6 +553,13 @@ function applyKinematicsToWheels(vx, vy, vrot) {
     robot.moveWheel(1, -vy + vx + vrot); // FR
     robot.moveWheel(2, vy - vx + vrot); // BL
     robot.moveWheel(3, -vy - vx + vrot); // BR
+  } else if (dtType === "omni3") {
+    // Kiwi Drive formula mapping:
+    // Wheel 0 (Back): horizontal drive
+    // Wheel 1 (FR) & Wheel 2 (FL): diagonal drive
+    robot.moveWheel(0, -vx + vrot); // Back
+    robot.moveWheel(1, 0.5 * vx - 0.866 * vy + vrot); // FR
+    robot.moveWheel(2, 0.5 * vx + 0.866 * vy + vrot); // FL
   } else if (dtType === "tank") {
     // Tank Drive mapping:
     // Left = Vy + Vrot
@@ -595,7 +616,10 @@ function pollKeyboardAndVirtualJoysticks() {
   if (activeKeys.has("3")) { robot.moveWheel(1, 1.0); individualWheelInput = true; }
   if (activeKeys.has("4")) { robot.moveWheel(1, -1.0); individualWheelInput = true; }
   
-  if (robot.drivetrain.numWheels() === 4) {
+  if (robot.drivetrain.numWheels() === 3) {
+    if (activeKeys.has("5")) { robot.moveWheel(2, 1.0); individualWheelInput = true; }
+    if (activeKeys.has("6")) { robot.moveWheel(2, -1.0); individualWheelInput = true; }
+  } else if (robot.drivetrain.numWheels() === 4) {
     if (activeKeys.has("5")) { robot.moveWheel(2, 1.0); individualWheelInput = true; }
     if (activeKeys.has("6")) { robot.moveWheel(2, -1.0); individualWheelInput = true; }
     if (activeKeys.has("7")) { robot.moveWheel(3, 1.0); individualWheelInput = true; }
@@ -785,9 +809,15 @@ function updateChart(velocities) {
 
   // Update Legend badge based on active drivetrain
   const legend = document.getElementById("chart-legend");
-  legend.innerHTML = velocities.length === 4 
-    ? `<span style="color:${WHEEL_COLORS[0]}">■ FL</span> <span style="color:${WHEEL_COLORS[1]}">■ FR</span> <span style="color:${WHEEL_COLORS[2]}">■ BL</span> <span style="color:${WHEEL_COLORS[3]}">■ BR</span>`
-    : `<span style="color:${WHEEL_COLORS[0]}">■ Left</span> <span style="color:${WHEEL_COLORS[1]}">■ Right</span>`;
+  let legendHTML = "";
+  if (velocities.length === 4) {
+    legendHTML = `<span style="color:${WHEEL_COLORS[0]}">■ FL</span> <span style="color:${WHEEL_COLORS[1]}">■ FR</span> <span style="color:${WHEEL_COLORS[2]}">■ BL</span> <span style="color:${WHEEL_COLORS[3]}">■ BR</span>`;
+  } else if (velocities.length === 3) {
+    legendHTML = `<span style="color:${WHEEL_COLORS[0]}">■ Back</span> <span style="color:${WHEEL_COLORS[1]}">■ FR</span> <span style="color:${WHEEL_COLORS[2]}">■ FL</span>`;
+  } else {
+    legendHTML = `<span style="color:${WHEEL_COLORS[0]}">■ Left</span> <span style="color:${WHEEL_COLORS[1]}">■ Right</span>`;
+  }
+  legend.innerHTML = legendHTML;
 }
 
 /**

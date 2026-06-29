@@ -392,6 +392,150 @@ class TankDriveTrain extends Drivetrain {
 }
 
 /**
+ * 3-Wheel Omni Drive (Kiwi holonomic configuration)
+ */
+class Omni3DriveTrain extends Drivetrain {
+  constructor() {
+    super("3-Wheel Omni Drive", 3);
+    // Vector contributions:
+    // Wheel 0 (Back): drives purely horizontally
+    // Wheel 1 (FR) & Wheel 2 (FL): diagonal vectors at 120-degree intervals
+    this.forward = [0.0, -Math.sqrt(3.0) / 2.0, Math.sqrt(3.0) / 2.0];
+    this.right = [-1.0, 0.5, 0.5];
+    this.turnRight = [1.0, 1.0, 1.0];
+  }
+
+  forwardWheelSpins() {
+    return this.forward;
+  }
+
+  rightWheelSpins() {
+    return this.right;
+  }
+
+  turnRightWheelSpins() {
+    return this.turnRight;
+  }
+
+  getRobotTranslation(velocities) {
+    // Kinematic translation conversion from wheel velocities:
+    // vy = (v2 - v1) / sqrt(3)
+    // vx = (v2 + v1 - 2*v0) / 3
+    const vy = (velocities[2] - velocities[1]) / Math.sqrt(3.0);
+    const vx = (velocities[2] + velocities[1] - 2.0 * velocities[0]) / 3.0;
+    return { x: vx, y: -vy };
+  }
+
+  getRobotRotation(velocities) {
+    // Rotation is average of all three wheel spins
+    return (velocities[0] + velocities[1] + velocities[2]) * 0.008;
+  }
+
+  updateWheelAngle(dt) {
+    // Omni wheels are fixed at 120 degrees relative to each other
+  }
+
+  drawWheels(ctx, wheelSpins, velocities) {
+    const R = ROBOT_HEIGHT * 0.7; // distance from center to wheels
+
+    // Wheel 0: Back (0, R)
+    ctx.save();
+    ctx.translate(0, R);
+    ctx.rotate(0); // Oriented horizontally (tangent to radius at bottom)
+    this.drawSingleWheel(ctx, wheelSpins[0], velocities[0]);
+    ctx.restore();
+
+    // Wheel 1: Front Right (R * cos(30°), -R * sin(30°))
+    ctx.save();
+    ctx.translate(R * Math.cos(Math.PI / 6.0), -R * Math.sin(Math.PI / 6.0));
+    ctx.rotate(2.0 * Math.PI / 3.0);
+    this.drawSingleWheel(ctx, wheelSpins[1], velocities[1]);
+    ctx.restore();
+
+    // Wheel 2: Front Left (-R * cos(30°), -R * sin(30°))
+    ctx.save();
+    ctx.translate(-R * Math.cos(Math.PI / 6.0), -R * Math.sin(Math.PI / 6.0));
+    ctx.rotate(4.0 * Math.PI / 3.0);
+    this.drawSingleWheel(ctx, wheelSpins[2], velocities[2]);
+    ctx.restore();
+  }
+
+  drawSingleWheel(ctx, spin, velocity) {
+    let positiveSpin = spin;
+    if (positiveSpin < 0) {
+      positiveSpin += MECANUM_ROLLER_SPACING * Math.ceil(-positiveSpin / MECANUM_ROLLER_SPACING);
+    }
+
+    // 1. Force Vector Guide Line (Grey, extending outside the wheel body)
+    ctx.strokeStyle = "rgba(100, 116, 139, 0.4)";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(0, -MECANUM_ARROW_LENGTH - 15);
+    ctx.lineTo(0, MECANUM_ARROW_LENGTH + 15);
+    ctx.stroke();
+
+    // 2. Draw Force Vector Arrow (Red)
+    if (Math.abs(velocity) > 0.01) {
+      ctx.save();
+      ctx.shadowBlur = 8;
+      ctx.shadowColor = "#ef4444";
+      ctx.strokeStyle = "#ef4444";
+      ctx.lineWidth = 3;
+      
+      const fy = -velocity * (MECANUM_ARROW_LENGTH + 10);
+      
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(0, fy);
+      ctx.stroke();
+
+      // Arrowhead
+      const offset = velocity > 0 ? 10 : -10;
+      ctx.beginPath();
+      ctx.moveTo(0, fy);
+      ctx.lineTo(-6, fy + offset);
+      ctx.moveTo(0, fy);
+      ctx.lineTo(6, fy + offset);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // 3. Draw Tire Body
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.15)";
+    ctx.lineWidth = 2;
+    ctx.fillStyle = "#1e293b";
+    ctx.beginPath();
+    ctx.roundRect(-MECANUM_WHEEL_WIDTH / 2, -MECANUM_WHEEL_HEIGHT / 2, MECANUM_WHEEL_WIDTH, MECANUM_WHEEL_HEIGHT, 4);
+    ctx.fill();
+    ctx.stroke();
+
+    // Wheel hub
+    ctx.fillStyle = "rgba(59, 130, 246, 0.3)";
+    ctx.fillRect(-MECANUM_WHEEL_WIDTH / 4, -MECANUM_WHEEL_HEIGHT / 3, MECANUM_WHEEL_WIDTH / 2, (MECANUM_WHEEL_HEIGHT * 2) / 3);
+
+    // 4. Omni circumferential roller lines (drawn perpendicular to tire length)
+    ctx.save();
+    ctx.beginPath();
+    ctx.roundRect(-MECANUM_WHEEL_WIDTH / 2, -MECANUM_WHEEL_HEIGHT / 2, MECANUM_WHEEL_WIDTH, MECANUM_WHEEL_HEIGHT, 4);
+    ctx.clip();
+
+    ctx.strokeStyle = "#e5e7eb";
+    ctx.lineWidth = 3;
+
+    let lineY = -MECANUM_WHEEL_HEIGHT / 2 - (positiveSpin % MECANUM_ROLLER_SPACING) + MECANUM_ROLLER_SPACING;
+    while (lineY < MECANUM_WHEEL_HEIGHT / 2) {
+      ctx.beginPath();
+      ctx.moveTo(-MECANUM_WHEEL_WIDTH / 2, lineY);
+      ctx.lineTo(MECANUM_WHEEL_WIDTH / 2, lineY);
+      ctx.stroke();
+
+      lineY += MECANUM_ROLLER_SPACING;
+    }
+    ctx.restore();
+  }
+}
+
+/**
  * Main Robot class governing coordinates, heading, trails, and force updates.
  */
 class Robot {
@@ -417,6 +561,8 @@ class Robot {
       this.drivetrain = new MecanumDriveTrain(false);
     } else if (drivetrainType === "omni") {
       this.drivetrain = new MecanumDriveTrain(true);
+    } else if (drivetrainType === "omni3") {
+      this.drivetrain = new Omni3DriveTrain();
     } else if (drivetrainType === "tank") {
       this.drivetrain = new TankDriveTrain();
     }
@@ -550,8 +696,15 @@ class Robot {
     ctx.fillStyle = "rgba(15, 23, 42, 0.85)"; // matching dark theme body
     
     ctx.beginPath();
-    const baseHeight = ROBOT_HEIGHT + ROBOT_BASE_HEIGHT_MARGIN * 2;
-    ctx.roundRect(-ROBOT_WIDTH / 2, -baseHeight / 2, ROBOT_WIDTH, baseHeight, 16);
+    if (this.drivetrain.numWheels() === 3) {
+      // Draw circular chassis for Kiwi drive
+      const R = ROBOT_HEIGHT * 0.7;
+      ctx.arc(0, 0, R + 15, 0, Math.PI * 2);
+    } else {
+      // Draw rectangular chassis
+      const baseHeight = ROBOT_HEIGHT + ROBOT_BASE_HEIGHT_MARGIN * 2;
+      ctx.roundRect(-ROBOT_WIDTH / 2, -baseHeight / 2, ROBOT_WIDTH, baseHeight, 16);
+    }
     ctx.fill();
     ctx.stroke();
     ctx.restore();
@@ -562,7 +715,13 @@ class Robot {
     ctx.shadowColor = "#3b82f6";
     ctx.fillStyle = "#3b82f6";
     ctx.beginPath();
-    ctx.arc(0, -ROBOT_HEIGHT / 2 - ROBOT_BASE_HEIGHT_MARGIN + 12, 10, 0, Math.PI * 2);
+    if (this.drivetrain.numWheels() === 3) {
+      const R = ROBOT_HEIGHT * 0.7;
+      // Front is at top (0, -R - 15)
+      ctx.arc(0, -R - 15, 10, 0, Math.PI * 2);
+    } else {
+      ctx.arc(0, -ROBOT_HEIGHT / 2 - ROBOT_BASE_HEIGHT_MARGIN + 12, 10, 0, Math.PI * 2);
+    }
     ctx.fill();
     ctx.restore();
 
@@ -681,12 +840,20 @@ class Robot {
 
   // Telemetry details mapping
   getTelemetry() {
+    let names = [];
+    if (this.drivetrain.numWheels() === 4) {
+      names = ["FL", "FR", "BL", "BR"];
+    } else if (this.drivetrain.numWheels() === 3) {
+      names = ["Back", "FR", "FL"];
+    } else {
+      names = ["Left", "Right"];
+    }
     return {
       x: this.x.toFixed(1),
       y: this.y.toFixed(1),
       rot: ((this.rot * 180) / Math.PI % 360).toFixed(1),
       wheelVelocities: this.wheelVelocities.map(v => v.toFixed(2)),
-      wheelNames: this.drivetrain.numWheels() === 4 ? ["FL", "FR", "BL", "BR"] : ["Left", "Right"]
+      wheelNames: names
     };
   }
 }
