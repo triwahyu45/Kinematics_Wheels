@@ -398,10 +398,10 @@ class Omni3DriveTrain extends Drivetrain {
   constructor() {
     super("3-Wheel Omni Drive", 3);
     // Vector contributions:
-    // Wheel 0 (Back): drives purely horizontally
-    // Wheel 1 (FR) & Wheel 2 (FL): diagonal vectors at 120-degree intervals
+    // Wheel 0 (Front): Horizontal sideways drive
+    // Wheel 1 (BR) & Wheel 2 (BL): Angled vectors at 120-degree intervals
     this.forward = [0.0, -Math.sqrt(3.0) / 2.0, Math.sqrt(3.0) / 2.0];
-    this.right = [-1.0, 0.5, 0.5];
+    this.right = [1.0, -0.5, -0.5];
     this.turnRight = [1.0, 1.0, 1.0];
   }
 
@@ -420,9 +420,9 @@ class Omni3DriveTrain extends Drivetrain {
   getRobotTranslation(velocities) {
     // Kinematic translation conversion from wheel velocities:
     // vy = (v2 - v1) / sqrt(3)
-    // vx = (v2 + v1 - 2*v0) / 3
+    // vx = (2*v0 - v1 - v2) / 3
     const vy = (velocities[2] - velocities[1]) / Math.sqrt(3.0);
-    const vx = (velocities[2] + velocities[1] - 2.0 * velocities[0]) / 3.0;
+    const vx = (2.0 * velocities[0] - velocities[1] - velocities[2]) / 3.0;
     return { x: vx, y: -vy };
   }
 
@@ -438,23 +438,23 @@ class Omni3DriveTrain extends Drivetrain {
   drawWheels(ctx, wheelSpins, velocities) {
     const R = ROBOT_HEIGHT * 0.7; // distance from center to wheels
 
-    // Wheel 0: Back (0, R)
+    // Wheel 0: Front Apex (0, -R)
     ctx.save();
-    ctx.translate(0, R);
-    ctx.rotate(0); // Oriented horizontally (tangent to radius at bottom)
+    ctx.translate(0, -R);
+    ctx.rotate(Math.PI / 2.0); // Oriented horizontally (perpendicular to top radius)
     this.drawSingleWheel(ctx, wheelSpins[0], velocities[0]);
     ctx.restore();
 
-    // Wheel 1: Front Right (R * cos(30°), -R * sin(30°))
+    // Wheel 1: Bottom Right (R * cos(30°), R * sin(30°))
     ctx.save();
-    ctx.translate(R * Math.cos(Math.PI / 6.0), -R * Math.sin(Math.PI / 6.0));
+    ctx.translate(R * Math.cos(Math.PI / 6.0), R * Math.sin(Math.PI / 6.0));
     ctx.rotate(2.0 * Math.PI / 3.0);
     this.drawSingleWheel(ctx, wheelSpins[1], velocities[1]);
     ctx.restore();
 
-    // Wheel 2: Front Left (-R * cos(30°), -R * sin(30°))
+    // Wheel 2: Bottom Left (-R * cos(30°), R * sin(30°))
     ctx.save();
-    ctx.translate(-R * Math.cos(Math.PI / 6.0), -R * Math.sin(Math.PI / 6.0));
+    ctx.translate(-R * Math.cos(Math.PI / 6.0), R * Math.sin(Math.PI / 6.0));
     ctx.rotate(4.0 * Math.PI / 3.0);
     this.drawSingleWheel(ctx, wheelSpins[2], velocities[2]);
     ctx.restore();
@@ -844,7 +844,7 @@ class Robot {
     if (this.drivetrain.numWheels() === 4) {
       names = ["FL", "FR", "BL", "BR"];
     } else if (this.drivetrain.numWheels() === 3) {
-      names = ["Back", "FR", "FL"];
+      names = ["Front", "BR", "BL"];
     } else {
       names = ["Left", "Right"];
     }

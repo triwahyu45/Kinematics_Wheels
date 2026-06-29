@@ -62,15 +62,15 @@ const DT_EXPLANATIONS = {
   `,
   omni3: `
     <strong>Omni-wheel (3W / Kiwi) Kinematics</strong><br>
-    Uses 3 Omni wheels spaced at 120° angles to provide holonomic motion.
+    Uses 3 Omni wheels spaced at 120° angles with the apex at the front.
     <ul>
-      <li><strong>Back Wheel:</strong> Drives purely horizontally.</li>
-      <li><strong>FR & FL Wheels:</strong> Positioned at angles to resolve forward & lateral forces.</li>
+      <li><strong>Front Wheel:</strong> Positioned horizontally, drives sideways.</li>
+      <li><strong>BR & BL Wheels:</strong> Set at angled vectors to coordinate x and y forces.</li>
       <li>Enables full translation and rotation with only 3 motors.</li>
     </ul>
-    <code>Wheel0 (Back) = -Vx + Vrot</code><br>
-    <code>Wheel1 (FR) = 0.5*Vx - 0.866*Vy + Vrot</code><br>
-    <code>Wheel2 (FL) = 0.5*Vx + 0.866*Vy + Vrot</code>
+    <code>Wheel0 (Front) = Vx + Vrot</code><br>
+    <code>Wheel1 (BR) = -0.5*Vx - 0.866*Vy + Vrot</code><br>
+    <code>Wheel2 (BL) = -0.5*Vx + 0.866*Vy + Vrot</code>
   `,
   tank: `
     <strong>Tank / Skid-Steer Kinematics</strong><br>
@@ -605,11 +605,11 @@ function applyKinematicsToWheels(vx, vy, vrot) {
     robot.moveWheel(3, -vy - vx + vrot); // BR
   } else if (dtType === "omni3") {
     // Kiwi Drive formula mapping:
-    // Wheel 0 (Back): horizontal drive
-    // Wheel 1 (FR) & Wheel 2 (FL): diagonal drive
-    robot.moveWheel(0, -vx + vrot); // Back
-    robot.moveWheel(1, 0.5 * vx - 0.866 * vy + vrot); // FR
-    robot.moveWheel(2, 0.5 * vx + 0.866 * vy + vrot); // FL
+    // Wheel 0 (Front): Horizontal drive
+    // Wheel 1 (BR) & Wheel 2 (BL): Diagonal drive
+    robot.moveWheel(0, vx + vrot); // Front
+    robot.moveWheel(1, -0.5 * vx - 0.866 * vy + vrot); // BR
+    robot.moveWheel(2, -0.5 * vx + 0.866 * vy + vrot); // BL
   } else if (dtType === "tank") {
     // Tank Drive mapping:
     // Left = Vy + Vrot
@@ -897,7 +897,7 @@ function updateChart(velocities) {
   if (velocities.length === 4) {
     legendHTML = `<span style="color:${WHEEL_COLORS[0]}">■ FL</span> <span style="color:${WHEEL_COLORS[1]}">■ FR</span> <span style="color:${WHEEL_COLORS[2]}">■ BL</span> <span style="color:${WHEEL_COLORS[3]}">■ BR</span>`;
   } else if (velocities.length === 3) {
-    legendHTML = `<span style="color:${WHEEL_COLORS[0]}">■ Back</span> <span style="color:${WHEEL_COLORS[1]}">■ FR</span> <span style="color:${WHEEL_COLORS[2]}">■ FL</span>`;
+    legendHTML = `<span style="color:${WHEEL_COLORS[0]}">■ Front</span> <span style="color:${WHEEL_COLORS[1]}">■ BR</span> <span style="color:${WHEEL_COLORS[2]}">■ BL</span>`;
   } else {
     legendHTML = `<span style="color:${WHEEL_COLORS[0]}">■ Left</span> <span style="color:${WHEEL_COLORS[1]}">■ Right</span>`;
   }
