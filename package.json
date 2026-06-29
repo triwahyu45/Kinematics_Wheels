@@ -1,0 +1,23 @@
+{
+  "name": "kinematics-wheels-simulator",
+  "version": "1.0.0",
+  "description": "Robotics wheel kinematics simulation with gamepad and telemetry support",
+  "main": "index.html",
+  "scripts": {
+    "dev": "vite --open",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "keywords": [
+    "robotics",
+    "mecanum",
+    "omni",
+    "kinematics",
+    "gamepad"
+  ],
+  "author": "Tri Wahyu",
+  "license": "MIT",
+  "devDependencies": {
+    "vite": "^5.0.0"
+  }
+}

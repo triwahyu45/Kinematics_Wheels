@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kinematics Wheels Simulator</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- CSS Stylesheet -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Sidebar Panel -->
+    <aside class="sidebar">
+      <div class="brand">
+        <i data-lucide="cpu" class="brand-icon"></i>
+        <div>
+          <h1>KineDrive</h1>
+          <span class="subtitle">Kinematics Wheel Simulator</span>
+        </div>
+      </div>
+
+      <nav class="settings-nav">
+        <!-- Section: Drivetrain Select -->
+        <div class="nav-section">
+          <h3><i data-lucide="cog"></i> Drivetrain Type</h3>
+          <div class="drivetrain-selector">
+            <button id="btn-mecanum" class="dt-btn active" data-type="mecanum">
+              <i data-lucide="boxes"></i>
+              <span>Mecanum Drive</span>
+            </button>
+            <button id="btn-omni" class="dt-btn" data-type="omni">
+              <i data-lucide="disc"></i>
+              <span>Omni Wheel</span>
+            </button>
+            <button id="btn-tank" class="dt-btn" data-type="tank">
+              <i data-lucide="sliders-horizontal"></i>
+              <span>Tank Drive</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Section: Control Modes -->
+        <div class="nav-section">
+          <h3><i data-lucide="navigation"></i> Control Mode</h3>
+          <div class="toggle-group">
+            <span class="toggle-label">Field Centric Mode</span>
+            <label class="switch">
+              <input type="checkbox" id="toggle-field-centric">
+              <span class="slider"></span>
+            </label>
+          </div>
+          <p class="section-description">
+            <strong>Field Centric:</strong> Robot moves relative to your screen.<br>
+            <strong>Robot Centric:</strong> Robot moves relative to its own front.
+          </p>
+        </div>
+
+        <!-- Section: Physical/Simulation Parameters -->
+        <div class="nav-section">
+          <h3><i data-lucide="sliders"></i> Parameters</h3>
+          <div class="param-control">
+            <div class="param-header">
+              <span class="param-name">Drive Speed</span>
+              <span class="param-val" id="val-speed">1.0x</span>
+            </div>
+            <input type="range" id="slider-speed" min="0.1" max="2.0" step="0.1" value="1.0">
+          </div>
+
+          <div class="param-control">
+            <div class="param-header">
+              <span class="param-name">Rotation Speed</span>
+              <span class="param-val" id="val-rot-speed">1.0x</span>
+            </div>
+            <input type="range" id="slider-rot-speed" min="0.1" max="2.0" step="0.1" value="1.0">
+          </div>
+
+          <div class="checkbox-group">
+            <label class="checkbox-container">
+              <input type="checkbox" id="toggle-trail" checked>
+              <span class="checkmark"></span>
+              Show Path Trail
+            </label>
+            <label class="checkbox-container">
+              <input type="checkbox" id="toggle-grid" checked>
+              <span class="checkmark"></span>
+              Show Grid Lines
+            </label>
+            <label class="checkbox-container">
+              <input type="checkbox" id="toggle-vectors" checked>
+              <span class="checkmark"></span>
+              Show Force Vectors
+            </label>
+          </div>
+        </div>
+
+        <!-- Section: Action Controls -->
+        <div class="nav-section actions">
+          <button id="btn-reset" class="action-btn danger">
+            <i data-lucide="rotate-ccw"></i>
+            <span>Reset Position (R)</span>
+          </button>
+          <button id="btn-clear-trail" class="action-btn secondary">
+            <i data-lucide="trash-2"></i>
+            <span>Clear Trail</span>
+          </button>
+        </div>
+      </nav>
+    </aside>
+
+    <!-- Main Workspace -->
+    <main class="workspace">
+      <!-- Top Bar: Quick Stats -->
+      <header class="workspace-header">
+        <div class="stat-card">
+          <span class="stat-label">Drivetrain</span>
+          <span class="stat-value text-accent" id="txt-active-drivetrain">Mecanum Drive</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Position</span>
+          <span class="stat-value" id="txt-position">X: 0.0, Y: 0.0</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Heading</span>
+          <span class="stat-value" id="txt-heading">0.0°</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Input Source</span>
+          <span class="stat-value text-success" id="txt-input-source">Keyboard</span>
+        </div>
+      </header>
+
+      <!-- Simulation Viewport -->
+      <div class="canvas-container">
+        <canvas id="sim-canvas"></canvas>
+        
+        <!-- On-Screen Virtual Joystick overlay (hidden on desktop if gamepad connected, but accessible) -->
+        <div class="virtual-joysticks-container">
+          <div class="joystick-wrapper" id="joystick-left-wrapper">
+            <div class="joystick-base" id="joystick-left-base">
+              <div class="joystick-stick" id="joystick-left-stick"></div>
+            </div>
+            <span class="joystick-label">Translation (Strafe)</span>
+          </div>
+          <div class="joystick-wrapper" id="joystick-right-wrapper">
+            <div class="joystick-base" id="joystick-right-base">
+              <div class="joystick-stick" id="joystick-right-stick"></div>
+            </div>
+            <span class="joystick-label">Rotation</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom Dashboard: Telemetry Chart & Info -->
+      <footer class="telemetry-dashboard">
+        <div class="dashboard-panel chart-panel">
+          <div class="panel-header">
+            <h3><i data-lucide="activity"></i> Wheel Speeds Telemetry</h3>
+            <span class="badge" id="chart-legend">FL | FR | BL | BR</span>
+          </div>
+          <div class="chart-canvas-container">
+            <canvas id="chart-canvas"></canvas>
+          </div>
+        </div>
+
+        <div class="dashboard-panel wheel-gauges-panel">
+          <div class="panel-header">
+            <h3><i data-lucide="gauge"></i> Motor Velocities</h3>
+          </div>
+          <div class="wheel-speeds-grid" id="wheel-speeds-container">
+            <!-- Dynamically populated wheel speeds bars -->
+          </div>
+        </div>
+      </footer>
+    </main>
+
+    <!-- Gamepad & Keys Sidebar (Right) -->
+    <aside class="right-panel">
+      <!-- Gamepad Debugger Card -->
+      <div class="right-card gamepad-card">
+        <div class="card-header">
+          <h3><i data-lucide="gamepad"></i> Gamepad Monitor</h3>
+          <span id="gamepad-status-indicator" class="status-indicator disconnected"></span>
+        </div>
+        <div class="gamepad-card-content">
+          <div id="gamepad-info-text" class="status-text">No gamepad connected. Connect a controller and press any button.</div>
+          
+          <div class="controller-visualizer" id="controller-viz" style="display: none;">
+            <div class="stick-displays">
+              <div class="stick-viz-box">
+                <span class="stick-name">Left Stick</span>
+                <div class="stick-dot-container">
+                  <div class="stick-dot-grid"></div>
+                  <div class="stick-dot" id="gamepad-lstick-dot"></div>
+                </div>
+                <span class="stick-val" id="txt-lstick-val">X: 0.00, Y: 0.00</span>
+              </div>
+              <div class="stick-viz-box">
+                <span class="stick-name">Right Stick</span>
+                <div class="stick-dot-container">
+                  <div class="stick-dot-grid"></div>
+                  <div class="stick-dot" id="gamepad-rstick-dot"></div>
+                </div>
+                <span class="stick-val" id="txt-rstick-val">X: 0.00, Y: 0.00</span>
+              </div>
+            </div>
+            
+            <div class="buttons-grid" id="gamepad-buttons-viz">
+              <!-- Buttons will be rendered here dynamically -->
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Key Bindings Reference -->
+      <div class="right-card keys-card">
+        <div class="card-header">
+          <h3><i data-lucide="keyboard"></i> Key Bindings</h3>
+        </div>
+        <div class="keys-content">
+          <div class="key-row">
+            <span class="key-badge">▲▼◀▶</span>
+            <span class="key-desc">Translate (Forward/Strafe)</span>
+          </div>
+          <div class="key-row">
+            <span class="key-badge">W S A D</span>
+            <span class="key-desc">Translate (W/S) & Rotate (A/D)</span>
+          </div>
+          <div class="key-row">
+            <span class="key-badge">1 - 8</span>
+            <span class="key-desc">Spin individual wheels (FL, FR, BL, BR)</span>
+          </div>
+          <div class="key-row">
+            <span class="key-badge">M / O / T</span>
+            <span class="key-desc">Switch Drive (Mecanum/Omni/Tank)</span>
+          </div>
+          <div class="key-row">
+            <span class="key-badge">R</span>
+            <span class="key-desc">Reset position</span>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Educational Explanation -->
+      <div class="right-card explanation-card">
+        <div class="card-header">
+          <h3><i data-lucide="info"></i> Kinematics Info</h3>
+        </div>
+        <div class="explanation-content" id="drivetrain-explanation">
+          <!-- Dynamic text based on active drivetrain -->
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <!-- JS Files -->
+  <script src="robot.js"></script>
+  <script src="gamepad.js"></script>
+  <script src="app.js"></script>
+  <script>
+    // Initialize Lucide icons on page load
+    lucide.createIcons();
+  </script>
+</body>
+</html>
