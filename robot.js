@@ -419,16 +419,16 @@ class Omni3DriveTrain extends Drivetrain {
 
   getRobotTranslation(velocities) {
     // Kinematic translation conversion from wheel velocities:
-    // vy = (v1 - v2) / sqrt(3)
-    // vx = (2*v0 - v1 - v2) / 3
-    const vy = (velocities[2] - velocities[1]) / Math.sqrt(3.0);
-    const vx = (2.0 * velocities[0] - velocities[1] - velocities[2]) / 3.0;
+    // vx = v2 - v1
+    // vy = (2*v0 + v1 - 3*v2) / sqrt(3)
+    const vx = velocities[2] - velocities[1];
+    const vy = (2.0 * velocities[0] + velocities[1] - 3.0 * velocities[2]) / Math.sqrt(3.0);
     return { x: vx, y: -vy };
   }
 
   getRobotRotation(velocities) {
-    // Rotation is average of all three wheel spins
-    return (velocities[0] + velocities[1] + velocities[2]) * 0.008;
+    // Analytical rotation calculation
+    return (velocities[0] - velocities[2] + velocities[1]) * 0.008;
   }
 
   updateWheelAngle(dt) {
@@ -448,14 +448,14 @@ class Omni3DriveTrain extends Drivetrain {
     // Wheel 1: Bottom Right (R * cos(30°), R * sin(30°))
     ctx.save();
     ctx.translate(R * Math.cos(Math.PI / 6.0), R * Math.sin(Math.PI / 6.0));
-    ctx.rotate(Math.PI / 6.0); // Perpendicular to radius, local positive Y points down-left
+    ctx.rotate(-Math.PI / 6.0); // Perpendicular to radius, local positive Y points down-right
     this.drawSingleWheel(ctx, wheelSpins[1], velocities[1]);
     ctx.restore();
 
     // Wheel 2: Bottom Left (-R * cos(30°), R * sin(30°))
     ctx.save();
     ctx.translate(-R * Math.cos(Math.PI / 6.0), R * Math.sin(Math.PI / 6.0));
-    ctx.rotate(5.0 * Math.PI / 6.0); // Perpendicular to radius, local positive Y points up-left
+    ctx.rotate(Math.PI / 6.0); // Perpendicular to radius, local positive Y points down-left
     this.drawSingleWheel(ctx, wheelSpins[2], velocities[2]);
     ctx.restore();
   }
