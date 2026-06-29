@@ -13,6 +13,7 @@ let showTrail = true;
 let showGrid = true;
 let showVectors = true;
 let isFieldCentric = false;
+let lockRobotPosition = false;
 
 // Virtual Joysticks State
 let joysticks = {
@@ -165,6 +166,15 @@ function setupUIEventListeners() {
     isFieldCentric = e.target.checked;
   });
 
+  const lockToggle = document.getElementById("toggle-lock-position");
+  lockToggle.addEventListener("change", (e) => {
+    lockRobotPosition = e.target.checked;
+    if (lockRobotPosition) {
+      robot.x = canvas.width / 2;
+      robot.y = canvas.height / 2;
+    }
+  });
+
   const trailToggle = document.getElementById("toggle-trail");
   trailToggle.addEventListener("change", (e) => {
     showTrail = e.target.checked;
@@ -292,8 +302,11 @@ function setupTouchEventListeners() {
     const mouseX = e.clientX - rect.left;
     const mouseY = e.clientY - rect.top;
     
+    const targetX = lockRobotPosition ? canvas.width / 2 : robot.x;
+    const targetY = lockRobotPosition ? canvas.height / 2 : robot.y;
+    
     // Check if clicked inside robot radius (approx 120px)
-    const dist = Math.hypot(mouseX - robot.x, mouseY - robot.y);
+    const dist = Math.hypot(mouseX - targetX, mouseY - targetY);
     if (dist < 120) {
       draggingRobot = true;
       dragOffset.x = robot.x - mouseX;
@@ -321,7 +334,11 @@ function setupTouchEventListeners() {
       const rect = canvas.getBoundingClientRect();
       const touchX = e.touches[0].clientX - rect.left;
       const touchY = e.touches[0].clientY - rect.top;
-      const dist = Math.hypot(touchX - robot.x, touchY - robot.y);
+      
+      const targetX = lockRobotPosition ? canvas.width / 2 : robot.x;
+      const targetY = lockRobotPosition ? canvas.height / 2 : robot.y;
+      
+      const dist = Math.hypot(touchX - targetX, touchY - targetY);
       if (dist < 120) {
         draggingRobot = true;
         dragOffset.x = robot.x - touchX;
@@ -439,9 +456,9 @@ function handleGamepadInput(vx, vy, vrot) {
   
   if (isFieldCentric) {
     const theta = robot.rot;
-    // Rotate field-centric vector (-theta) to get robot-centric vector
-    finalVx = vx * Math.cos(-theta) - vy * Math.sin(-theta);
-    finalVy = vx * Math.sin(-theta) + vy * Math.cos(-theta);
+    // Rotate field-centric vector by theta to get robot-centric vector
+    finalVx = vx * Math.cos(theta) - vy * Math.sin(theta);
+    finalVy = vx * Math.sin(theta) + vy * Math.cos(theta);
   }
 
   // Calculate individual wheel inputs
@@ -500,8 +517,8 @@ function pollKeyboardAndVirtualJoysticks() {
     let finalVy = vy;
     if (isFieldCentric) {
       const theta = robot.rot;
-      finalVx = vx * Math.cos(-theta) - vy * Math.sin(-theta);
-      finalVy = vx * Math.sin(-theta) + vy * Math.cos(-theta);
+      finalVx = vx * Math.cos(theta) - vy * Math.sin(theta);
+      finalVy = vx * Math.sin(theta) + vy * Math.cos(theta);
     }
     
     applyKinematicsToWheels(finalVx, finalVy, vrot);
@@ -559,8 +576,8 @@ function pollKeyboardAndVirtualJoysticks() {
   let finalVy = vy;
   if (isFieldCentric) {
     const theta = robot.rot;
-    finalVx = vx * Math.cos(-theta) - vy * Math.sin(-theta);
-    finalVy = vx * Math.sin(-theta) + vy * Math.cos(-theta);
+    finalVx = vx * Math.cos(theta) - vy * Math.sin(theta);
+    finalVy = vx * Math.sin(theta) + vy * Math.cos(theta);
   }
 
   applyKinematicsToWheels(finalVx, finalVy, vrot);
@@ -620,8 +637,12 @@ function drawGridOverlay() {
   
   const gridSize = 40;
   
+  // If locked, calculate scrolling offsets from world coordinates
+  const offsetX = lockRobotPosition ? (canvas.width / 2 - robot.x) % gridSize : 0;
+  const offsetY = lockRobotPosition ? (canvas.height / 2 - robot.y) % gridSize : 0;
+  
   // Vertical lines
-  for (let x = 0; x < canvas.width; x += gridSize) {
+  for (let x = offsetX; x < canvas.width; x += gridSize) {
     ctx.beginPath();
     ctx.moveTo(x, 0);
     ctx.lineTo(x, canvas.height);
@@ -629,7 +650,7 @@ function drawGridOverlay() {
   }
   
   // Horizontal lines
-  for (let y = 0; y < canvas.height; y += gridSize) {
+  for (let y = offsetY; y < canvas.height; y += gridSize) {
     ctx.beginPath();
     ctx.moveTo(0, y);
     ctx.lineTo(canvas.width, y);
@@ -727,12 +748,14 @@ function loop(now) {
   // Update Physics
   robot.update(dt, speedMultiplier, rotSpeedMultiplier);
 
-  // Keep robot inside canvas boundaries (with bounce back or simple wrapping)
-  const margin = 80;
-  if (robot.x < margin) robot.x = margin;
-  if (robot.x > canvas.width - margin) robot.x = canvas.width - margin;
-  if (robot.y < margin) robot.y = margin;
-  if (robot.y > canvas.height - margin) robot.y = canvas.height - margin;
+  // Keep robot inside canvas boundaries (only when NOT locked to center)
+  if (!lockRobotPosition) {
+    const margin = 80;
+    if (robot.x < margin) robot.x = margin;
+    if (robot.x > canvas.width - margin) robot.x = canvas.width - margin;
+    if (robot.y < margin) robot.y = margin;
+    if (robot.y > canvas.height - margin) robot.y = canvas.height - margin;
+  }
 
   // Render Simulation
   ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -740,7 +763,7 @@ function loop(now) {
     drawGridOverlay();
   }
   
-  robot.draw(ctx, showVectors, showTrail);
+  robot.draw(ctx, showVectors, showTrail, lockRobotPosition, canvas.width, canvas.height);
 
   // Update Telemetry Displays
   const tel = robot.getTelemetry();

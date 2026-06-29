@@ -496,7 +496,10 @@ class Robot {
   }
 
   // Draw the whole robot on screen
-  draw(ctx, drawVectors, drawTrail) {
+  draw(ctx, drawVectors, drawTrail, lockPosition, canvasWidth, canvasHeight) {
+    const screenX = lockPosition ? canvasWidth / 2 : this.x;
+    const screenY = lockPosition ? canvasHeight / 2 : this.y;
+
     // 1. Draw Trail
     if (drawTrail && this.trail.length > 1) {
       ctx.save();
@@ -510,8 +513,13 @@ class Robot {
         const alpha = i / this.trail.length;
         ctx.strokeStyle = `rgba(59, 130, 246, ${alpha * 0.4})`; // blue fading trail
         ctx.beginPath();
-        ctx.moveTo(p1.x, p1.y);
-        ctx.lineTo(p2.x, p2.y);
+        if (lockPosition) {
+          ctx.moveTo(p1.x + (canvasWidth / 2 - this.x), p1.y + (canvasHeight / 2 - this.y));
+          ctx.lineTo(p2.x + (canvasWidth / 2 - this.x), p2.y + (canvasHeight / 2 - this.y));
+        } else {
+          ctx.moveTo(p1.x, p1.y);
+          ctx.lineTo(p2.x, p2.y);
+        }
         ctx.stroke();
       }
       ctx.restore();
@@ -519,7 +527,7 @@ class Robot {
 
     // 2. Draw Robot
     ctx.save();
-    ctx.translate(this.x, this.y);
+    ctx.translate(screenX, screenY);
     ctx.rotate(this.rot);
 
     // Chassis Box shadow/glow
