@@ -608,8 +608,8 @@ function applyKinematicsToWheels(vx, vy, vrot) {
     // Wheel 0 (Front): Horizontal drive
     // Wheel 1 (BR) & Wheel 2 (BL): Diagonal drive
     robot.moveWheel(0, vx + vrot); // Front
-    robot.moveWheel(1, -0.5 * vx + 0.866 * vy + vrot); // BR
-    robot.moveWheel(2, -0.5 * vx - 0.866 * vy + vrot); // BL
+    robot.moveWheel(1, -0.5 * vx - 0.866 * vy + vrot); // BR
+    robot.moveWheel(2, -0.5 * vx + 0.866 * vy + vrot); // BL
   } else if (dtType === "tank") {
     // Tank Drive mapping:
     // Left = Vy + Vrot
