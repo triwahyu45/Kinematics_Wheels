@@ -14,6 +14,9 @@ let showGrid = true;
 let showVectors = true;
 let isFieldCentric = false;
 let lockRobotPosition = false;
+let isHeadingLock = false;
+let targetHeadingValue = 0.0;
+let hasTargetHeading = false;
 
 // Virtual Joysticks State
 let joysticks = {
@@ -187,6 +190,17 @@ function setupUIEventListeners() {
     }
   });
 
+  const hlToggle = document.getElementById("toggle-heading-lock");
+  hlToggle.addEventListener("change", (e) => {
+    isHeadingLock = e.target.checked;
+    if (isHeadingLock) {
+      targetHeadingValue = robot.rot;
+      hasTargetHeading = true;
+    } else {
+      hasTargetHeading = false;
+    }
+  });
+
   const trailToggle = document.getElementById("toggle-trail");
   trailToggle.addEventListener("change", (e) => {
     showTrail = e.target.checked;
@@ -265,7 +279,19 @@ function setupCustomGamepadActions() {
     }
   });
 
-  window.addEventListener("toggle-trail", () => {
+  window.addEventListener("toggle-heading-lock", () => {
+    const toggle = document.getElementById("toggle-heading-lock");
+    toggle.checked = !toggle.checked;
+    isHeadingLock = toggle.checked;
+    if (isHeadingLock) {
+      targetHeadingValue = robot.rot;
+      hasTargetHeading = true;
+    } else {
+      hasTargetHeading = false;
+    }
+  });
+
+  window.addEventListener("toggle-trail", () =>>,StartLine:254,TargetContent: {
     const toggle = document.getElementById("toggle-trail");
     toggle.checked = !toggle.checked;
     showTrail = toggle.checked;
@@ -521,11 +547,35 @@ function setupSingleJoystick(side, baseId, stickId) {
 /**
  * Handle input velocities from gamepad joysticks
  */
-function handleGamepadInput(vx, vy, vrot) {
-  // Translate vx, vy based on field-centric mode if enabled
+function handleGamepadInput(vx, vy, rx, ry) {
   let finalVx = vx;
   let finalVy = vy;
-  
+  let finalVrot = rx; // Default: right stick X controls spin velocity
+
+  const ryInverted = -ry;
+
+  if (isHeadingLock) {
+    if (Math.hypot(rx, ryInverted) > 0.2) {
+      targetHeadingValue = Math.atan2(rx, ryInverted);
+      hasTargetHeading = true;
+    }
+
+    if (hasTargetHeading) {
+      let error = targetHeadingValue - robot.rot;
+      // Normalize error to [-PI, PI]
+      error = Math.atan2(Math.sin(error), Math.cos(error));
+      
+      const kP = 4.0;
+      finalVrot = error * kP;
+      finalVrot = Math.max(-1.0, Math.min(1.0, finalVrot));
+      
+      if (Math.abs(error) < 0.01 && Math.hypot(rx, ryInverted) <= 0.2) {
+        finalVrot = 0.0;
+      }
+    }
+  }
+
+  // Translate vx, vy based on field-centric mode if enabled
   if (isFieldCentric) {
     const theta = robot.rot;
     // Rotate field-centric vector by theta to get robot-centric vector
@@ -534,7 +584,7 @@ function handleGamepadInput(vx, vy, vrot) {
   }
 
   // Calculate individual wheel inputs
-  applyKinematicsToWheels(finalVx, finalVy, vrot);
+  applyKinematicsToWheels(finalVx, finalVy, finalVrot);
 }
 
 /**
@@ -591,6 +641,22 @@ function pollKeyboardAndVirtualJoysticks() {
     vy = joysticks.left.y;
     vrot = joysticks.right.x;
     
+    if (joysticks.right.active) {
+      hasTargetHeading = false; // suspend lock during manual rotation
+    } else if (isHeadingLock && !hasTargetHeading) {
+      targetHeadingValue = robot.rot;
+      hasTargetHeading = true;
+    }
+
+    if (isHeadingLock && hasTargetHeading) {
+      let error = targetHeadingValue - robot.rot;
+      error = Math.atan2(Math.sin(error), Math.cos(error));
+      const kP = 4.0;
+      vrot = error * kP;
+      vrot = Math.max(-1.0, Math.min(1.0, vrot));
+      if (Math.abs(error) < 0.01) vrot = 0.0;
+    }
+
     // Apply field-centric rotation if active
     let finalVx = vx;
     let finalVy = vy;
@@ -648,9 +714,27 @@ function pollKeyboardAndVirtualJoysticks() {
   // Rotational translations
   if (activeKeys.has("d")) {
     vrot = 1.0;
+    hasTargetHeading = false; // suspend lock
   }
   if (activeKeys.has("a")) {
     vrot = -1.0;
+    hasTargetHeading = false; // suspend lock
+  }
+
+  if (!activeKeys.has("d") && !activeKeys.has("a")) {
+    if (isHeadingLock && !hasTargetHeading) {
+      targetHeadingValue = robot.rot;
+      hasTargetHeading = true;
+    }
+
+    if (isHeadingLock && hasTargetHeading) {
+      let error = targetHeadingValue - robot.rot;
+      error = Math.atan2(Math.sin(error), Math.cos(error));
+      const kP = 4.0;
+      vrot = error * kP;
+      vrot = Math.max(-1.0, Math.min(1.0, vrot));
+      if (Math.abs(error) < 0.01) vrot = 0.0;
+    }
   }
 
   // Apply field-centric mapping to keyboard layout

@@ -186,8 +186,8 @@ class GamepadHandler {
     if (hasStickInput) {
       this.inputSourceBadge.textContent = "Gamepad";
       this.inputSourceBadge.className = "stat-value text-success";
-      // Send joysticks input back to app: lx (strafe), ly (forward), rx (turn)
-      this.onInput(lx, ly, rx);
+      // Send joysticks input back to app: lx (strafe), ly (forward), rx (turn X), ry (turn Y)
+      this.onInput(lx, ly, rx, ry);
     }
   }
 
@@ -250,6 +250,10 @@ class GamepadHandler {
       case 15: // D-pad Right - Rotation Speed Up
         console.log("Gamepad: Rotation Speed Up");
         window.dispatchEvent(new CustomEvent("rot-up"));
+        break;
+      case 11: // 'RS Click / R3' - Toggle Heading Lock
+        console.log("Gamepad: Toggling Heading Lock");
+        window.dispatchEvent(new CustomEvent("toggle-heading-lock"));
         break;
     }
   }
