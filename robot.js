@@ -224,7 +224,15 @@ class MecanumDriveTrain extends Drivetrain {
   }
 
   drawOmniWheelGraphics(ctx, spin, velocity) {
-    // 1. Draw Force Vector (straight forward/backward along local rotated wheel length)
+    // 1. Force Vector Guide Line (Grey, extending outside the wheel body)
+    ctx.strokeStyle = "rgba(100, 116, 139, 0.4)";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(0, -MECANUM_ARROW_LENGTH - 15);
+    ctx.lineTo(0, MECANUM_ARROW_LENGTH + 15);
+    ctx.stroke();
+
+    // 2. Draw Force Vector Arrow (Red)
     if (Math.abs(velocity) > 0.01) {
       ctx.save();
       ctx.shadowBlur = 8;
@@ -232,7 +240,8 @@ class MecanumDriveTrain extends Drivetrain {
       ctx.strokeStyle = "#ef4444";
       ctx.lineWidth = 3;
       
-      const fy = -velocity * MECANUM_ARROW_LENGTH;
+      // Make the red arrow slightly longer so it's clearly visible outside the wheel body
+      const fy = -velocity * (MECANUM_ARROW_LENGTH + 10);
       
       ctx.beginPath();
       ctx.moveTo(0, 0);
