@@ -419,16 +419,16 @@ class Omni3DriveTrain extends Drivetrain {
 
   getRobotTranslation(velocities) {
     // Kinematic translation conversion from wheel velocities:
-    // vy = (v2 - v1) / sqrt(3)
-    // vx = (2*v0 - v1 - v2) / 3
-    const vy = (velocities[2] - velocities[1]) / Math.sqrt(3.0);
-    const vx = (2.0 * velocities[0] - velocities[1] - velocities[2]) / 3.0;
+    // vx = v0 - (v1 + v2)/2
+    // vy = (v0 - v1 - 0.5*vx) / sqrt(0.75)
+    const vx = velocities[0] - (velocities[1] + velocities[2]) / 2.0;
+    const vy = (velocities[0] - velocities[1] - 0.5 * vx) / Math.sqrt(0.75);
     return { x: vx, y: -vy };
   }
 
   getRobotRotation(velocities) {
-    // Rotation is average of all three wheel spins
-    return (velocities[0] + velocities[1] + velocities[2]) * 0.008;
+    // Rotation is average of bottom wheels: Vrot = (v1 + v2)/2
+    return ((velocities[1] + velocities[2]) / 2.0) * 0.008;
   }
 
   updateWheelAngle(dt) {
@@ -437,24 +437,25 @@ class Omni3DriveTrain extends Drivetrain {
 
   drawWheels(ctx, wheelSpins, velocities) {
     const R = ROBOT_HEIGHT * 0.7; // distance from center to wheels
+    const R_w = R + 12; // Radius for wheels to stick out proportionally
 
-    // Wheel 0: Front Apex (0, -R)
+    // Wheel 0: Front Apex (0, -R_w)
     ctx.save();
-    ctx.translate(0, -R);
+    ctx.translate(0, -R_w);
     ctx.rotate(-Math.PI / 2.0); // Oriented horizontally, local positive Y points right
     this.drawSingleWheel(ctx, wheelSpins[0], velocities[0]);
     ctx.restore();
 
-    // Wheel 1: Bottom Right (R * cos(30°), R * sin(30°))
+    // Wheel 1: Bottom Right (R_w * cos(30°), R_w * sin(30°))
     ctx.save();
-    ctx.translate(R * Math.cos(Math.PI / 6.0), R * Math.sin(Math.PI / 6.0));
+    ctx.translate(R_w * Math.cos(Math.PI / 6.0), R_w * Math.sin(Math.PI / 6.0));
     ctx.rotate(Math.PI / 3.0); // Perpendicular to radius, local positive Y points down-right
     this.drawSingleWheel(ctx, wheelSpins[1], velocities[1]);
     ctx.restore();
 
-    // Wheel 2: Bottom Left (-R * cos(30°), R * sin(30°))
+    // Wheel 2: Bottom Left (-R_w * cos(30°), R_w * sin(30°))
     ctx.save();
-    ctx.translate(-R * Math.cos(Math.PI / 6.0), R * Math.sin(Math.PI / 6.0));
+    ctx.translate(-R_w * Math.cos(Math.PI / 6.0), R_w * Math.sin(Math.PI / 6.0));
     ctx.rotate(2.0 * Math.PI / 3.0); // Perpendicular to radius, local positive Y points up-left
     this.drawSingleWheel(ctx, wheelSpins[2], velocities[2]);
     ctx.restore();
